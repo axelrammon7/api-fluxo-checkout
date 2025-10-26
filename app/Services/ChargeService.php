@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Charge;
 use App\Models\Customer;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -24,6 +25,7 @@ class ChargeService
     {
         $customer = Customer::findOrFail($data['customer_id']);
 
+        // Se houver chave de idempotência, verifica se já existe
         if ($idempotencyKey) {
             $existingCharge = Charge::where('idempotency_key', $idempotencyKey)->first();
             if ($existingCharge) {
@@ -41,10 +43,22 @@ class ChargeService
             ['status' => 'pending']
         );
 
+        // Usa transação com tratamento de erro de duplicação para proteger contra race conditions
         try {
-            return DB::transaction(function () use ($chargeData) {
-                return Charge::create($chargeData);
+            return DB::transaction(function () use ($chargeData, $idempotencyKey) {
+                // Tenta criar a cobrança
+                $charge = Charge::create($chargeData);
+                return $charge;
             });
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Se houver erro de chave única (idempotency_key duplicado), busca a cobrança existente
+            if ($e->getCode() === '23000' && $idempotencyKey) {
+                $existingCharge = Charge::where('idempotency_key', $idempotencyKey)->first();
+                if ($existingCharge) {
+                    return $existingCharge;
+                }
+            }
+            throw new \Exception("Falha ao criar a cobrança: " . $e->getMessage(), 500);
         } catch (\Exception $e) {
             throw new \Exception("Falha ao criar a cobrança: " . $e->getMessage(), 500);
         }

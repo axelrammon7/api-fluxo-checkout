@@ -59,24 +59,30 @@ O servidor estará disponível em `http://localhost:8000`
 
 ## 🧪 Como Testar a API
 
-### Configuração no Postman ou Insomnia
+### Configuração no Insomnia
 
-**Base URL:** `http://localhost:8000`
+**1. Inicie o servidor:**
+```bash
+php artisan serve
+```
+
+**2. Abra o Insomnia e configure:**
+- **Base URL:** `http://localhost:8000`
 
 **Headers necessários:**
 - `Content-Type: application/json`
 - (Opcional) `Idempotency-Key: sua-chave-unica` (para cobranças)
 
-### 1. Cadastrar um Cliente
+### 📝 Passo a Passo no Insomnia
 
-**Endpoint:** `POST /api/customers`
+#### 1. Criar um Cliente
 
-**Headers:**
-```
-Content-Type: application/json
-```
-
-**Body (JSON):**
+1. Crie uma nova request (botão `+` ou `Ctrl+N`)
+2. Nome: `Post Customer`
+3. Método: **POST**
+4. URL: `http://localhost:8000/api/customers`
+5. Clique em **Body** → selecione **JSON**
+6. Cole o JSON:
 ```json
 {
   "name": "João Silva",
@@ -85,65 +91,63 @@ Content-Type: application/json
   "phone": "11999888777"
 }
 ```
+7. Clique em **Send**
 
-**Resposta de Sucesso (201 Created):**
+**✅ Resposta esperada (201 Created):**
 ```json
 {
   "message": "Cliente cadastrado com sucesso.",
   "customer_id": 1,
-  "customer": {
-    "id": 1,
-    "name": "João Silva",
-    "email": "joao.silva@example.com",
-    "document": "12345678900",
-    "phone": "11999888777"
-  }
+  "customer": { ... }
 }
 ```
 
-### 2. Criar uma Cobrança
+#### 2. Criar uma Cobrança
 
-**Endpoint:** `POST /api/charges`
-
-**Headers:**
-```
-Content-Type: application/json
-Idempotency-Key: unique-key-123
-```
-
-**Body (JSON):**
+1. Crie uma nova request: `Post Charge`
+2. Método: **POST**
+3. URL: `http://localhost:8000/api/charges`
+4. Em **Headers**, adicione:
+   - Key: `Content-Type` → Value: `application/json`
+   - Key: `Idempotency-Key` → Value: `minha-chave-123`
+5. Clique em **Body** → **JSON**:
 ```json
 {
   "customer_id": 1,
   "amount": 100.50,
   "payment_method": "pix",
-  "due_date": "2025-10-30"
+  "due_date": "2025-11-30"
+}
+```
+6. **Send**
+
+#### 3. Testar Idempotência
+
+1. Use a mesma request `Post Charge`
+2. Não mude nada (mesma `Idempotency-Key`)
+3. Clique em **Send** novamente
+4. **✅ Deve retornar status 200** com a cobrança existente (sem criar duplicata)
+
+#### 4. Testar Outros Métodos de Pagamento
+
+**Cartão de Crédito:**
+```json
+{
+  "customer_id": 1,
+  "amount": 200.00,
+  "payment_method": "credit_card",
+  "due_date": "2025-11-30",
+  "installments": 3
 }
 ```
 
-**Tipos de Pagamento Disponíveis:**
-- `pix` - Pagamento via Pix
-- `credit_card` - Cartão de Crédito
-- `bank_slip` - Boleto Bancário
-
-**Resposta de Sucesso (201 Created):**
+**Boleto:**
 ```json
 {
-  "message": "Cobrança criada com sucesso.",
-  "charge_id": 1,
-  "status": "pending",
-  "charge": {
-    "id": 1,
-    "customer_id": 1,
-    "amount": "100.50",
-    "payment_method": "pix",
-    "status": "pending",
-    "customer": {
-      "id": 1,
-      "name": "João Silva",
-      "email": "joao.silva@example.com"
-    }
-  }
+  "customer_id": 1,
+  "amount": 150.00,
+  "payment_method": "boleto",
+  "due_date": "2025-12-05"
 }
 ```
 

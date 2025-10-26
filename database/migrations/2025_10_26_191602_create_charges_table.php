@@ -36,7 +36,8 @@ return new class extends Migration
             $table->json('payment_details')->nullable(); // Para dados JSON extras (código Pix, URL do boleto)
 
             // Para Idempotência (REQUISITO: Controle de idempotência)
-            $table->uuid('idempotency_key')->nullable()->unique(); 
+            // Aceita qualquer string única para permitir flexibilidade nas chaves
+            $table->string('idempotency_key', 255)->nullable()->unique(); 
 
             $table->timestamps();
         });

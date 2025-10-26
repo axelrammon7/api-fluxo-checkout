@@ -33,8 +33,8 @@ class StoreChargeRequest extends FormRequest
                 Rule::requiredIf($this->payment_method === 'credit_card') 
             ],
             
-            // Idempotency Key (opcional, mas deve ser um UUID válido)
-            'idempotency_key' => 'nullable|uuid' 
+            // Idempotency Key (opcional, aceita qualquer string)
+            'idempotency_key' => 'nullable|string|max:255' 
         ];
     }
     
